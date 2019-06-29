@@ -8,13 +8,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.DefaultUriBuilderFactory;
-import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toList;
 
 @RestController
 public class FirstController {
@@ -49,14 +46,15 @@ public class FirstController {
         List<Employee> emps = new ArrayList<>();
         long startTime = System.currentTimeMillis();
 
+        Employee employee = Flux.range(1, 3)
+                .flatMap(i -> webClient.get().uri("/employee/{name}", "Rasik" + i)
+                        .retrieve()
+                        .bodyToMono(Employee.class))
+                .blockLast();
 
 
-        List<Mono<Employee>> employeeMonos = Stream.of(1, 2, 3).map(i -> webClient.get().uri("/employee/{name}", "Rasik" + i)
-                .retrieve().bodyToMono(Employee.class))
-                .collect(toList());
-
-        Mono.when(employeeMonos).block();
         LOG.info("Total Time elapsed - " + (System.currentTimeMillis() - startTime));
+        LOG.info("Last Emp - " + (employee));
         System.out.println("Total Time elapsed - " + (System.currentTimeMillis() - startTime));
         return emps;
     }
